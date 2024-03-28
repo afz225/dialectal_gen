@@ -14,7 +14,7 @@ echo "starting......................."
 
 python finetune_copa.py \
 --dataset="copa" \
---model="cestwc/roberta-base-unigram-ternary-wikilingua" \
+--model="roberta-base" \
 --language="aus"
 
 
