@@ -60,8 +60,8 @@ def preprocess_function(examples):
 
     # Restructure inputs to match the expected format for RobertaForMultipleChoice
     features = {
-        'input_ids': torch.tensor(input_ids).view(-1, 512),
-        'attention_mask': torch.tensor(attention_masks).view(-1, 512),
+        'input_ids': torch.tensor(input_ids).view(-1, 2, 512),
+        'attention_mask': torch.tensor(attention_masks).view(-1, 2, 512),
         'labels': torch.tensor(labels)
     }
     return features

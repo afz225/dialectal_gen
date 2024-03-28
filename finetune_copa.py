@@ -1,5 +1,5 @@
 print("Started importing")
-from datasets import load_dataset
+from datasets import load_dataset, Dataset, DatasetDict
 import argparse
 import torch
 import evaluate
@@ -14,13 +14,12 @@ parser = argparse.ArgumentParser(description='A test script for argparse.')
 parser.add_argument('--dataset', required=True,type=str, help='Which dataset used')
 parser.add_argument('--model', required=True, type=str, help='Model used.')
 parser.add_argument('--language', required=True, type=str, help='Language used.')
-parser.add_argument('--evaluation_strategy', required=True, type=str, help='Evaluation Strategy')
 
 # Parse arguments
 args = parser.parse_args()
 
 # Use arguments
-dataset = args.dataset
+dataset = load_dataset("super_glue", args.dataset)
 model_name = args.model
 language = args.language
 print(model_name,dataset)
@@ -34,7 +33,8 @@ def compute_metrics(eval_pred):
     predictions = np.argmax(logits, axis=-1)
     return metric.compute(predictions=predictions, references=labels)
     
-data = load_dataset(dataset,language)
+# replaced because we only have one language for standard english    
+data = dataset#load_dataset(dataset,language)
 
 tokenizer = RobertaTokenizer.from_pretrained(model_name)
 
