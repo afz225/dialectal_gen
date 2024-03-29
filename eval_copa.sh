@@ -13,7 +13,7 @@ echo "starting......................."
 ###################### RUN Eval ######################
 
 DATASET="ashabrawy/dia_copa"
-MODEL="roberta-base"
+MODEL="xlm-roberta-base"
 LOGGING_DIR="short_1e-6"
 
 python eval_copa.py \

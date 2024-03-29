@@ -30,6 +30,14 @@ print(model_name, dataset)
 metric = evaluate.load("accuracy")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+if model_name == "roberta-base":
+    tokenizer = RobertaTokenizer.from_pretrained(model_name)
+elif model_name == "xlm-roberta-base":
+    tokenizer = XLMRobertaTokenizer.from_pretrained(model_name)
+else:
+    tokenizer = RobertaTokenizer.from_pretrained(model_name)
+    print("Using the default roberta tokenizer, be careful")
+
 
 def compute_metrics(eval_pred):
     logits, labels = eval_pred
@@ -74,10 +82,6 @@ dialects = ["aus", "col", "hon", "nig", "wel"]
 for dialect in dialects:
     data = load_dataset(dataset, dialect)
 
-    # Map the preprocessing function over the dataset
-    tokenized_datasets = data.map(preprocess_function, batched=True)
-
-
     if model_name == "roberta-base":
         tokenizer = RobertaTokenizer.from_pretrained(model_name)
     elif model_name == "xlm-roberta-base":
@@ -85,6 +89,9 @@ for dialect in dialects:
     else:
         tokenizer = RobertaTokenizer.from_pretrained(model_name)
         print("Using the default roberta tokenizer, be careful")
+
+    # Map the preprocessing function over the dataset
+    tokenized_datasets = data.map(preprocess_function, batched=True)
 
     # Load the pre-trained RobertaForMultipleChoice model
     if model_name == "roberta-base":
