@@ -14,27 +14,27 @@ echo "starting......................."
 
 python eval_copa.py \
 --dataset="ashabrawy/dia_copa" \
---model="roberta-base" \
+--model="xlm-roberta-base" \
 --language="aus"
 
 python eval_copa.py \
 --dataset="ashabrawy/dia_copa" \
---model="roberta-base" \
+--model="xlm-roberta-base" \
 --language="col"
 
 python eval_copa.py \
 --dataset="ashabrawy/dia_copa" \
---model="roberta-base" \
+--model="xlm-roberta-base" \
 --language="hon"
 
 python eval_copa.py \
 --dataset="ashabrawy/dia_copa" \
---model="roberta-base" \
+--model="xlm-roberta-base" \
 --language="nig"
 
 python eval_copa.py \
 --dataset="ashabrawy/dia_copa" \
---model="roberta-base" \
+--model="xlm-roberta-base" \
 --language="wel"
 
 

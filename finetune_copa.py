@@ -1,19 +1,20 @@
 print("Started importing")
-from datasets import load_dataset, Dataset, DatasetDict
+from datasets import load_dataset
 import argparse
 import torch
 import evaluate
 import os
 import numpy as np
-from transformers import RobertaTokenizer, RobertaForMultipleChoice, Trainer, TrainingArguments
+from transformers import RobertaTokenizer, RobertaForMultipleChoice, \
+    XLMRobertaTokenizer, XLMRobertaForMultipleChoice, Trainer, TrainingArguments
 
 # Create the parser
 parser = argparse.ArgumentParser(description='A test script for argparse.')
 
 # Add arguments
-parser.add_argument('--dataset', required=True,type=str, help='Which dataset used')
+parser.add_argument('--dataset', required=True,type=str, help='Which dataset used.')
 parser.add_argument('--model', required=True, type=str, help='Model used.')
-parser.add_argument('--language', required=True, type=str, help='Language used.')
+parser.add_argument('--logging_dir', required=True, type=str, help='Directory for saving the models.')
 
 # Parse arguments
 args = parser.parse_args()
@@ -21,8 +22,9 @@ args = parser.parse_args()
 # Use arguments
 dataset = load_dataset("super_glue", args.dataset)
 model_name = args.model
-language = args.language
-print(model_name,dataset)
+logging_dir = args.logging_dir
+
+print(model_name, dataset)
 
 metric = evaluate.load("accuracy")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -32,12 +34,14 @@ def compute_metrics(eval_pred):
     logits, labels = eval_pred
     predictions = np.argmax(logits, axis=-1)
     return metric.compute(predictions=predictions, references=labels)
-    
-# replaced because we only have one language for standard english    
-data = dataset#load_dataset(dataset,language)
 
-tokenizer = RobertaTokenizer.from_pretrained(model_name)
-
+if model_name == "roberta-base":
+    tokenizer = RobertaTokenizer.from_pretrained(model_name)
+elif model_name == "xlm-roberta-base":
+    tokenizer = XLMRobertaTokenizer.from_pretrained(model_name)
+else:
+    tokenizer = RobertaTokenizer.from_pretrained(model_name)
+    print("Using the default roberta tokenizer, be careful")
 
 
 def preprocess_function(examples):
@@ -67,19 +71,25 @@ def preprocess_function(examples):
     return features
 
 # Map the preprocessing function over the dataset
-tokenized_datasets = data.map(preprocess_function, batched=True)
+tokenized_datasets = dataset.map(preprocess_function, batched=True)
 
-# Load the pre-trained RobertaForMultipleChoice model
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = RobertaForMultipleChoice.from_pretrained(model_name).to(device)
+if model_name == "roberta-base":
+    model = RobertaForMultipleChoice.from_pretrained(model_name).to(device)
+elif model_name == "xlm-roberta-base":
+    model = XLMRobertaForMultipleChoice.from_pretrained(model_name).to(device)
+else:
+    model = RobertaForMultipleChoice.from_pretrained(model_name).to(device)
+    print("Using the default roberta, be careful")
+
+output_dir = f"{logging_dir}/{model_name}"
 
 # Define the training arguments
 training_args = TrainingArguments(
-    output_dir=f'./{model_name}_results_{language}',
+    output_dir=output_dir,
     num_train_epochs=50,
     per_device_train_batch_size=8,
-    warmup_steps=20, 
-    weight_decay=0.05, 
+    warmup_steps=10, 
+    weight_decay=0.01, 
     logging_dir='./logs',
     logging_steps=50,
     learning_rate=1e-6,
@@ -99,7 +109,7 @@ trainer = Trainer(
 trainer.train()
 
 # Path where the checkpoints are saved
-checkpoints_path = f'./{model_name}_results_{language}'
+checkpoints_path = output_dir
 checkpoints = [os.path.join(checkpoints_path, name) for name in os.listdir(checkpoints_path) if name.startswith("checkpoint")]
 
 # Placeholder for the best performance
@@ -108,13 +118,19 @@ best_checkpoint = None
 
 for checkpoint in checkpoints:
     # Load the model from checkpoint
-    model = RobertaForMultipleChoice.from_pretrained(checkpoint).to(device)
+    if model_name == "roberta-base":
+        model = RobertaForMultipleChoice.from_pretrained(model_name).to(device)
+    elif model_name == "xlm-roberta-base":
+        model = XLMRobertaForMultipleChoice.from_pretrained(model_name).to(device)
+    else:
+        model = RobertaForMultipleChoice.from_pretrained(model_name).to(device)
+        print("Using the default roberta, be careful")
 
     # Initialize Trainer
     trainer = Trainer(
         model=model,
         args=TrainingArguments(
-            output_dir=f'./{model_name}_results_{language}',
+            output_dir=output_dir,
             per_device_eval_batch_size=8,  # Adjust as necessary
         ),
         compute_metrics=compute_metrics,
@@ -139,19 +155,25 @@ if best_checkpoint:
     print(f"Best checkpoint: {best_checkpoint} with Eval Loss: {best_performance}")
 
     # Load the best model
-    best_model = RobertaForMultipleChoice.from_pretrained(best_checkpoint).to(device)
+    if model_name == "roberta-base":
+        best_model = RobertaForMultipleChoice.from_pretrained(model_name).to(device)
+    elif model_name == "xlm-roberta-base":
+        best_model = XLMRobertaForMultipleChoice.from_pretrained(model_name).to(device)
+    else:
+        best_model = RobertaForMultipleChoice.from_pretrained(model_name).to(device)
+        print("Using the default roberta, be careful")
 
     # Directly save the best model to the desired directory
-    best_model.save_pretrained(f'./{model_name}_results_{language}/best')
+    best_model.save_pretrained(f"{output_dir}/best")
 
     # If you want to save the tokenizer as well
-    tokenizer.save_pretrained(f'./{model_name}_results_{language}/best')
+    tokenizer.save_pretrained(f"{output_dir}/best")
 
     # Optional: Evaluate the best model again for confirmation, using the Trainer
     trainer = Trainer(
         model=best_model,
         args=TrainingArguments(
-            output_dir=f'./{model_name}_results_{language}/best',  # Ensure this matches where you're saving the model
+            output_dir=f'./{output_dir}/best',  # Ensure this matches where you're saving the model
             per_device_eval_batch_size=8,
         ),
         compute_metrics=compute_metrics,

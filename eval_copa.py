@@ -5,7 +5,8 @@ import torch
 import evaluate
 import os
 import numpy as np
-from transformers import AutoTokenizer, AutoModelForTokenClassification, RobertaForMultipleChoice, Trainer, TrainingArguments
+from transformers import RobertaTokenizer, RobertaForMultipleChoice, \
+    XLMRobertaTokenizer, XLMRobertaForMultipleChoice, Trainer, TrainingArguments
 
 # Create the parser
 parser = argparse.ArgumentParser(description='A test script for argparse.')
@@ -36,7 +37,7 @@ def compute_metrics(eval_pred):
     
 data = load_dataset(dataset, language)
 
-tokenizer = AutoTokenizer.from_pretrained(model_name)
+tokenizer = XLMRobertaTokenizer.from_pretrained(model_name)
 
 
 
@@ -71,7 +72,7 @@ tokenized_datasets = data.map(preprocess_function, batched=True)
 
 # Load the pre-trained RobertaForMultipleChoice model
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = RobertaForMultipleChoice.from_pretrained(f'./{model_name}_results/best').to(device)
+model = XLMRobertaForMultipleChoice.from_pretrained(f'./{model_name}_results/best').to(device)
 
 # Directly save the best model to the desired directory
 model.save_pretrained(f'./{model_name}_results_{language}/best')

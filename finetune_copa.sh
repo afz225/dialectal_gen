@@ -14,8 +14,8 @@ echo "starting......................."
 
 python finetune_copa.py \
 --dataset="copa" \
---model="roberta-base" \
---language="aus"
+--model="xlm-roberta-base" \
+--logging_dir="new_hyperparams"
 
 
 echo " ending "
