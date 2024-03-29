@@ -12,35 +12,14 @@
 echo "starting......................."
 ###################### RUN Eval ######################
 
-python eval_copa.py \
---dataset="ashabrawy/dia_copa" \
---model="xlm-roberta-base" \
---language="aus" \
---logging_dir="new_hyperparams"
+DATASET="ashabrawy/dia_copa"
+MODEL="roberta-base"
+LOGGING_DIR="short_1e-6"
 
 python eval_copa.py \
---dataset="ashabrawy/dia_copa" \
---model="xlm-roberta-base" \
---language="col" \
---logging_dir="new_hyperparams"
-
-python eval_copa.py \
---dataset="ashabrawy/dia_copa" \
---model="xlm-roberta-base" \
---language="hon" \
---logging_dir="new_hyperparams"
-
-python eval_copa.py \
---dataset="ashabrawy/dia_copa" \
---model="xlm-roberta-base" \
---language="nig" \
---logging_dir="new_hyperparams"
-
-python eval_copa.py \
---dataset="ashabrawy/dia_copa" \
---model="xlm-roberta-base" \
---language="wel" \
---logging_dir="new_hyperparams"
+--dataset=$DATASET \
+--model=$MODEL \
+--logging_dir=$LOGGING_DIR
 
 
 echo " ending "

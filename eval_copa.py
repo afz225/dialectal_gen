@@ -15,7 +15,6 @@ parser = argparse.ArgumentParser(description='A test script for argparse.')
 # Add arguments
 parser.add_argument('--dataset', required=True,type=str, help='Which dataset used')
 parser.add_argument('--model', required=True, type=str, help='Model used.')
-parser.add_argument('--language', required=True, type=str, help='Language used.')
 parser.add_argument('--logging_dir', required=True, type=str, help='Directory for saving the models.')
 
 # Parse arguments
@@ -24,7 +23,6 @@ args = parser.parse_args()
 # Use arguments
 dataset = args.dataset
 model_name = args.model
-language = args.language
 logging_dir = args.logging_dir
 
 print(model_name, dataset)
@@ -37,18 +35,6 @@ def compute_metrics(eval_pred):
     logits, labels = eval_pred
     predictions = np.argmax(logits, axis=-1)
     return metric.compute(predictions=predictions, references=labels)
-    
-data = load_dataset(dataset, language)
-
-if model_name == "roberta-base":
-    tokenizer = RobertaTokenizer.from_pretrained(model_name)
-elif model_name == "xlm-roberta-base":
-    tokenizer = XLMRobertaTokenizer.from_pretrained(model_name)
-else:
-    tokenizer = RobertaTokenizer.from_pretrained(model_name)
-    print("Using the default roberta tokenizer, be careful")
-
-output_dir = f"{logging_dir}/{model_name}"
 
 def preprocess_function(examples):
     # Unpack the premises and choices
@@ -81,28 +67,44 @@ def preprocess_function(examples):
     }
     return features
 
-# Map the preprocessing function over the dataset
-tokenized_datasets = data.map(preprocess_function, batched=True)
+output_dir = f"{logging_dir}/{model_name}"
 
-# Load the pre-trained RobertaForMultipleChoice model
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-if model_name == "roberta-base":
-    model = RobertaForMultipleChoice.from_pretrained(f"{output_dir}/best").to(device)
-elif model_name == "xlm-roberta-base":
-    model = XLMRobertaForMultipleChoice.from_pretrained(f"{output_dir}/best").to(device)
-else:
-    model = RobertaForMultipleChoice.from_pretrained(f"{output_dir}/best").to(device)
-    print("Using the default roberta, be careful")
+dialects = ["aus", "col", "hon", "nig", "wel"]
 
-# Optional: Evaluate the best model again for confirmation, using the Trainer
-trainer = Trainer(
-    model=model,
-    args=TrainingArguments(
-        output_dir=f"{output_dir}/best",  # Ensure this matches where you're saving the model
-        per_device_eval_batch_size=8,
-    ),
-    compute_metrics=compute_metrics,
-)
+for dialect in dialects:
+    data = load_dataset(dataset, dialect)
 
-eval_results = trainer.evaluate(tokenized_datasets['validation'])
-print("Final Evaluation on Best Model: ", language, " ", eval_results)
+    # Map the preprocessing function over the dataset
+    tokenized_datasets = data.map(preprocess_function, batched=True)
+
+
+    if model_name == "roberta-base":
+        tokenizer = RobertaTokenizer.from_pretrained(model_name)
+    elif model_name == "xlm-roberta-base":
+        tokenizer = XLMRobertaTokenizer.from_pretrained(model_name)
+    else:
+        tokenizer = RobertaTokenizer.from_pretrained(model_name)
+        print("Using the default roberta tokenizer, be careful")
+
+    # Load the pre-trained RobertaForMultipleChoice model
+    if model_name == "roberta-base":
+        model = RobertaForMultipleChoice.from_pretrained(f"{output_dir}/checkpoint-1850").to(device)
+    elif model_name == "xlm-roberta-base":
+        model = XLMRobertaForMultipleChoice.from_pretrained(f"{output_dir}/checkpoint-1850").to(device)
+    else:
+        model = RobertaForMultipleChoice.from_pretrained(f"{output_dir}/checkpoint-1850").to(device)
+        print("Using the default roberta, be careful")
+
+
+    # Optional: Evaluate the best model again for confirmation, using the Trainer
+    trainer = Trainer(
+        model=model,
+        args=TrainingArguments(
+            output_dir=f"{output_dir}/checkpoint-1850",  # Ensure this matches where you're saving the model
+            per_device_eval_batch_size=8,
+        ),
+        compute_metrics=compute_metrics,
+    )
+
+    eval_results = trainer.evaluate(tokenized_datasets['validation'])
+    print("Final Evaluation on Best Model: ", dialect, " ", eval_results)
