@@ -119,11 +119,11 @@ best_checkpoint = None
 for checkpoint in checkpoints:
     # Load the model from checkpoint
     if model_name == "roberta-base":
-        model = RobertaForMultipleChoice.from_pretrained(model_name).to(device)
+        model = RobertaForMultipleChoice.from_pretrained(checkpoint).to(device)
     elif model_name == "xlm-roberta-base":
-        model = XLMRobertaForMultipleChoice.from_pretrained(model_name).to(device)
+        model = XLMRobertaForMultipleChoice.from_pretrained(checkpoint).to(device)
     else:
-        model = RobertaForMultipleChoice.from_pretrained(model_name).to(device)
+        model = RobertaForMultipleChoice.from_pretrained(checkpoint).to(device)
         print("Using the default roberta, be careful")
 
     # Initialize Trainer
@@ -156,24 +156,24 @@ if best_checkpoint:
 
     # Load the best model
     if model_name == "roberta-base":
-        best_model = RobertaForMultipleChoice.from_pretrained(model_name).to(device)
+        best_model = RobertaForMultipleChoice.from_pretrained(best_checkpoint).to(device)
     elif model_name == "xlm-roberta-base":
-        best_model = XLMRobertaForMultipleChoice.from_pretrained(model_name).to(device)
+        best_model = XLMRobertaForMultipleChoice.from_pretrained(best_checkpoint).to(device)
     else:
-        best_model = RobertaForMultipleChoice.from_pretrained(model_name).to(device)
+        best_model = RobertaForMultipleChoice.from_pretrained(best_checkpoint).to(device)
         print("Using the default roberta, be careful")
 
     # Directly save the best model to the desired directory
-    best_model.save_pretrained(f"{output_dir}/best")
+    best_model.save_pretrained(f"{output_dir}/{model_name}/best")
 
     # If you want to save the tokenizer as well
-    tokenizer.save_pretrained(f"{output_dir}/best")
+    tokenizer.save_pretrained(f"{output_dir}/{model_name}/best")
 
     # Optional: Evaluate the best model again for confirmation, using the Trainer
     trainer = Trainer(
         model=best_model,
         args=TrainingArguments(
-            output_dir=f'./{output_dir}/best',  # Ensure this matches where you're saving the model
+            output_dir=f'./{output_dir}/{model_name}/best',  # Ensure this matches where you're saving the model
             per_device_eval_batch_size=8,
         ),
         compute_metrics=compute_metrics,

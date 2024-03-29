@@ -15,27 +15,32 @@ echo "starting......................."
 python eval_copa.py \
 --dataset="ashabrawy/dia_copa" \
 --model="xlm-roberta-base" \
---language="aus"
+--language="aus" \
+--logging_dir="new_hyperparams"
 
 python eval_copa.py \
 --dataset="ashabrawy/dia_copa" \
 --model="xlm-roberta-base" \
---language="col"
+--language="col" \
+--logging_dir="new_hyperparams"
 
 python eval_copa.py \
 --dataset="ashabrawy/dia_copa" \
 --model="xlm-roberta-base" \
---language="hon"
+--language="hon" \
+--logging_dir="new_hyperparams"
 
 python eval_copa.py \
 --dataset="ashabrawy/dia_copa" \
 --model="xlm-roberta-base" \
---language="nig"
+--language="nig" \
+--logging_dir="new_hyperparams"
 
 python eval_copa.py \
 --dataset="ashabrawy/dia_copa" \
 --model="xlm-roberta-base" \
---language="wel"
+--language="wel" \
+--logging_dir="new_hyperparams"
 
 
 echo " ending "

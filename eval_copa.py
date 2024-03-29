@@ -15,7 +15,7 @@ parser = argparse.ArgumentParser(description='A test script for argparse.')
 parser.add_argument('--dataset', required=True,type=str, help='Which dataset used')
 parser.add_argument('--model', required=True, type=str, help='Model used.')
 parser.add_argument('--language', required=True, type=str, help='Language used.')
-# parser.add_argument('--evaluation_strategy', required=True, type=str, help='Evaluation Strategy')
+parser.add_argument('--logging_dir', required=True, type=str, help='Directory for saving the models.')
 
 # Parse arguments
 args = parser.parse_args()
@@ -24,6 +24,8 @@ args = parser.parse_args()
 dataset = args.dataset
 model_name = args.model
 language = args.language
+logging_dir = args.logging_dir
+
 print(model_name, dataset)
 
 metric = evaluate.load("accuracy")
@@ -37,9 +39,15 @@ def compute_metrics(eval_pred):
     
 data = load_dataset(dataset, language)
 
-tokenizer = XLMRobertaTokenizer.from_pretrained(model_name)
+if model_name == "roberta-base":
+    tokenizer = RobertaTokenizer.from_pretrained(model_name)
+elif model_name == "xlm-roberta-base":
+    tokenizer = XLMRobertaTokenizer.from_pretrained(model_name)
+else:
+    tokenizer = RobertaTokenizer.from_pretrained(model_name)
+    print("Using the default roberta tokenizer, be careful")
 
-
+output_dir = f"{logging_dir}/{model_name}"
 
 def preprocess_function(examples):
     # Unpack the premises and choices
@@ -72,19 +80,25 @@ tokenized_datasets = data.map(preprocess_function, batched=True)
 
 # Load the pre-trained RobertaForMultipleChoice model
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = XLMRobertaForMultipleChoice.from_pretrained(f'./{model_name}_results/best').to(device)
+if model_name == "roberta-base":
+    model = RobertaForMultipleChoice.from_pretrained(f"{output_dir}/best").to(device)
+elif model_name == "xlm-roberta-base":
+    model = XLMRobertaForMultipleChoice.from_pretrained(f"{output_dir}/best").to(device)
+else:
+    model = RobertaForMultipleChoice.from_pretrained(f"{output_dir}/best").to(device)
+    print("Using the default roberta, be careful")
 
 # Directly save the best model to the desired directory
-model.save_pretrained(f'./{model_name}_results_{language}/best')
+model.save_pretrained(f"{output_dir}_{language}/best")
 
 # If you want to save the tokenizer as well
-tokenizer.save_pretrained(f'./{model_name}_results_{language}/best')
+tokenizer.save_pretrained(f"{output_dir}_{language}/best")
 
 # Optional: Evaluate the best model again for confirmation, using the Trainer
 trainer = Trainer(
     model=model,
     args=TrainingArguments(
-        output_dir=f'./{model_name}_results_{language}/best',  # Ensure this matches where you're saving the model
+        output_dir=f"{output_dir}_{language}/best",  # Ensure this matches where you're saving the model
         per_device_eval_batch_size=8,
     ),
     compute_metrics=compute_metrics,
