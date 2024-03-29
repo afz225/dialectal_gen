@@ -5,7 +5,7 @@ import torch
 import evaluate
 import os
 import numpy as np
-from transformers import AutoTokenizer, AutoModelForTokenClassification, Trainer, TrainingArguments
+from transformers import AutoTokenizer, AutoModelForTokenClassification, RobertaForMultipleChoice, Trainer, TrainingArguments
 
 # Create the parser
 parser = argparse.ArgumentParser(description='A test script for argparse.')
@@ -71,7 +71,7 @@ tokenized_datasets = data.map(preprocess_function, batched=True)
 
 # Load the pre-trained RobertaForMultipleChoice model
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = AutoModelForTokenClassification.from_pretrained(model_name).to(device)
+model = RobertaForMultipleChoice.from_pretrained(f'./{model_name}_results/best').to(device)
 
 # Directly save the best model to the desired directory
 model.save_pretrained(f'./{model_name}_results_{language}/best')
@@ -90,4 +90,4 @@ trainer = Trainer(
 )
 
 eval_results = trainer.evaluate(tokenized_datasets['validation'])
-print("Final Evaluation on Best Model:", eval_results)
+print("Final Evaluation on Best Model: ", language, " ", eval_results)

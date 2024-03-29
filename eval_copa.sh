@@ -14,8 +14,28 @@ echo "starting......................."
 
 python eval_copa.py \
 --dataset="ashabrawy/dia_copa" \
---model="cestwc/roberta-base-unigram-ternary-wikilingua" \
+--model="roberta-base" \
 --language="aus"
+
+python eval_copa.py \
+--dataset="ashabrawy/dia_copa" \
+--model="roberta-base" \
+--language="col"
+
+python eval_copa.py \
+--dataset="ashabrawy/dia_copa" \
+--model="roberta-base" \
+--language="hon"
+
+python eval_copa.py \
+--dataset="ashabrawy/dia_copa" \
+--model="roberta-base" \
+--language="nig"
+
+python eval_copa.py \
+--dataset="ashabrawy/dia_copa" \
+--model="roberta-base" \
+--language="wel"
 
 
 echo " ending "
