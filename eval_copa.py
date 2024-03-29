@@ -1,12 +1,13 @@
-print("Started importing")
-from datasets import load_dataset
 import argparse
-import torch
-import evaluate
 import os
+
+import evaluate
 import numpy as np
-from transformers import RobertaTokenizer, RobertaForMultipleChoice, \
-    XLMRobertaTokenizer, XLMRobertaForMultipleChoice, Trainer, TrainingArguments
+import torch
+from datasets import load_dataset
+from transformers import (RobertaForMultipleChoice, RobertaTokenizer, Trainer,
+                          TrainingArguments, XLMRobertaForMultipleChoice,
+                          XLMRobertaTokenizer)
 
 # Create the parser
 parser = argparse.ArgumentParser(description='A test script for argparse.')
@@ -60,10 +61,15 @@ def preprocess_function(examples):
     # Note that we provide both choices together as multiple_choices_inputs
     multiple_choices_inputs = []
     for premise, choice1, choice2 in zip(premises, choices_1, choices_2):
-        multiple_choices_inputs.append(tokenizer.encode_plus(premise, choice1, max_length=512, padding='max_length', truncation=True))
-        multiple_choices_inputs.append(tokenizer.encode_plus(premise, choice2, max_length=512, padding='max_length', truncation=True))
+        multiple_choices_inputs.append(tokenizer.encode_plus( \
+            premise, choice1, max_length=512, padding='max_length', \
+            truncation=True))
+        multiple_choices_inputs.append(tokenizer.encode_plus( \
+            premise, choice2, max_length=512, padding='max_length', \
+            truncation=True))
 
-    # RoBERTa expects a list of all first choices and a list of all second choices, hence we restructure the inputs
+    # RoBERTa expects a list of all first choices and a list of all second 
+    # choices, hence we restructure the inputs
     input_ids = [x['input_ids'] for x in multiple_choices_inputs]
     attention_masks = [x['attention_mask'] for x in multiple_choices_inputs]
 
@@ -88,17 +94,11 @@ else:
     model = RobertaForMultipleChoice.from_pretrained(f"{output_dir}/best").to(device)
     print("Using the default roberta, be careful")
 
-# Directly save the best model to the desired directory
-model.save_pretrained(f"{output_dir}_{language}/best")
-
-# If you want to save the tokenizer as well
-tokenizer.save_pretrained(f"{output_dir}_{language}/best")
-
 # Optional: Evaluate the best model again for confirmation, using the Trainer
 trainer = Trainer(
     model=model,
     args=TrainingArguments(
-        output_dir=f"{output_dir}_{language}/best",  # Ensure this matches where you're saving the model
+        output_dir=f"{output_dir}/best",  # Ensure this matches where you're saving the model
         per_device_eval_batch_size=8,
     ),
     compute_metrics=compute_metrics,
