@@ -13,9 +13,9 @@ echo "starting......................."
 ###################### RUN Eval ######################
 
 python finetune_copa.py \
---dataset="copa" \
+--dataset="nightingal3/fig-qa" \
 --model="xlm-roberta-base" \
---logging_dir="short_1e-6"
+--logging_dir="figqa"
 
 
 echo " ending "

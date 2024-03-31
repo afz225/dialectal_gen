@@ -13,7 +13,7 @@ from transformers import (RobertaForMultipleChoice, RobertaTokenizer, Trainer,
 parser = argparse.ArgumentParser()
 
 parser.add_argument('--dataset', required=True, type=str, \
-                    help='copa')
+                    help='copa / nightingal3/fig-qa')
 parser.add_argument('--model', required=True, type=str, \
                     help='roberta-base / xlm-roberta-base')
 parser.add_argument('--logging_dir', required=True, type=str, \
@@ -21,7 +21,8 @@ parser.add_argument('--logging_dir', required=True, type=str, \
 
 args = parser.parse_args()
 
-dataset = load_dataset("super_glue", args.dataset)
+# dataset = load_dataset("super_glue", args.dataset)
+dataset = load_dataset(args.dataset)
 model_name = args.model
 logging_dir = args.logging_dir
 
@@ -47,11 +48,16 @@ else:
 
 def preprocess_function(examples):
     # Unpack the premises and choices
-    premises = examples['premise']
-    choices_1 = examples['choice1']
-    choices_2 = examples['choice2']
-    labels = examples['label']
+    premise_index = "premise" if "premise" in examples else "startphrase"
+    choice_1_index = "choice1" if "choice1" in examples else "ending1"
+    choice_2_index = "choice2" if "choice2" in examples else "ending2"
+    label_index = "label" if "label" in examples else "labels"
 
+    premises = examples[premise_index]
+    choices_1 = examples[choice_1_index]
+    choices_2 = examples[choice_2_index]
+    labels = examples[label_index]
+    
     # Tokenize premises and choices
     # Note that we provide both choices together as multiple_choices_inputs
     multiple_choices_inputs = []
