@@ -14,7 +14,7 @@ echo "starting......................."
 
 python finetune_copa.py \
 --dataset="nightingal3/fig-qa" \
---model="xlm-roberta-base" \
+--model="roberta-base" \
 --logging_dir="figqa"
 
 

@@ -57,7 +57,7 @@ def preprocess_function(examples):
     choices_1 = examples[choice_1_index]
     choices_2 = examples[choice_2_index]
     labels = examples[label_index]
-    
+
     # Tokenize premises and choices
     # Note that we provide both choices together as multiple_choices_inputs
     multiple_choices_inputs = []
@@ -100,15 +100,15 @@ training_args = TrainingArguments(
     output_dir=output_dir,
     num_train_epochs=50,
     per_device_train_batch_size=8,
-    warmup_steps=20, 
-    weight_decay=0.05,
-    learning_rate=1e-6, 
+    warmup_steps=500, 
+    weight_decay=0.01,
+    learning_rate=5e-5, 
     logging_dir='./logs',
-    logging_steps=50,
-    save_steps=50, 
+    logging_steps=100,
+    save_steps=100, 
     save_total_limit=20,
     evaluation_strategy="steps",
-    eval_steps=50,
+    eval_steps=100,
     report_to = "wandb"
 )
 
