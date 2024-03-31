@@ -9,6 +9,20 @@ from transformers import (RobertaForMultipleChoice, RobertaTokenizer, Trainer,
                           TrainingArguments, XLMRobertaForMultipleChoice,
                           XLMRobertaTokenizer)
 
+import random
+
+def set_seed(seed_value=42):
+    """Set seed for reproducibility."""
+    np.random.seed(seed_value)
+    torch.manual_seed(seed_value)
+    torch.cuda.manual_seed_all(seed_value)  # If using CUDA
+    random.seed(seed_value)
+    # Ensures that CUDA operations are deterministic
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
+set_seed(1)  # You can choose any seed value
+
 
 parser = argparse.ArgumentParser()
 
@@ -98,11 +112,11 @@ output_dir = f"{logging_dir}/{model_name}"
 # Define the training arguments
 training_args = TrainingArguments(
     output_dir=output_dir,
-    num_train_epochs=50,
+    num_train_epochs=4,
     per_device_train_batch_size=8,
     warmup_steps=500, 
     weight_decay=0.01,
-    learning_rate=5e-5, 
+    learning_rate=5e-7, 
     logging_dir='./logs',
     logging_steps=100,
     save_steps=100, 
