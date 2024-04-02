@@ -1,3 +1,4 @@
 dia_*
 slurm*
 __pycache__
+wandb
