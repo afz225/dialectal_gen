@@ -33,6 +33,9 @@ class ModelArguments:
     warmup_proportion: Optional[float] = field(
         default=0.1, metadata={"help": "Proportion of training to perform linear learning rate warmup for. E.g., 0.1 = 10% of training."}
     )
+    wandb_project: Optional[str] = field(
+        default=None, metadata={"help": "Weights and Biases project name"}
+    )
 
 @dataclass
 class DataArguments:
