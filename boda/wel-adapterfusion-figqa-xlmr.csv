@@ -1,0 +1,2 @@
+,eval_loss,eval_acc,eval_runtime,eval_samples_per_second,eval_steps_per_second,epoch,test_set
+0,0.6931502223014832,0.4990859232175503,1.544,708.56,22.669,6.0,wel

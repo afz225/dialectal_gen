@@ -1,0 +1,6 @@
+Training for FIGQA
+{'loss': 0.6933, 'learning_rate': 4.04040404040404e-07, 'epoch': 6.25}
+{'eval_loss': 0.6934515237808228, 'eval_accuracy': 0.492, 'eval_f1': 0.5019607843137256, 'eval_precision': 0.49230769230769234, 'eval_recall': 0.512, 'eval_runtime': 143.4127, 'eval_samples_per_second': 3.486, 'eval_steps_per_second': 0.223, 'epoch': 6.25}
+{'train_runtime': 172.5018, 'train_samples_per_second': 28.985, 'train_steps_per_second': 1.855, 'train_loss': 0.6945956230163575, 'epoch': 10.0}
+Evaluation Results: {'eval_loss': 0.6934515237808228, 'eval_accuracy': 0.492, 'eval_f1': 0.5019607843137256, 'eval_precision': 0.49230769230769234, 'eval_recall': 0.512, 'eval_runtime': 150.5516, 'eval_samples_per_second': 3.321, 'eval_steps_per_second': 0.213, 'epoch': 10.0}
+ending 

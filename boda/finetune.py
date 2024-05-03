@@ -4,14 +4,15 @@ from transformers import HfArgumentParser, Seq2SeqTrainingArguments,EarlyStoppin
 import dataclasses
 import logging
 import os
+import evaluate
 import sys
 from dataclasses import dataclass, field
 from typing import Callable, Dict, Optional
 from datasets import load_dataset, concatenate_datasets,Value
 import numpy as np
-
+from typing import Union, Optional
 from transformers import AutoModelForSeq2SeqLM, DataCollatorForSeq2Seq, Seq2SeqTrainingArguments, Seq2SeqTrainer
-
+from transformers.tokenization_utils_base import PreTrainedTokenizerBase, PaddingStrategy
 from transformers import AutoConfig, AutoModelForSequenceClassification, AutoTokenizer, EvalPrediction, GlueDataset, AutoModel
 from transformers import GlueDataTrainingArguments as DataTrainingArguments
 from transformers import (
@@ -73,30 +74,48 @@ def tokenize_dia_copa(examples,tokenizer):
     choices_2 = examples[choice_2_index]
     labels = examples[label_index]
 
-    # Tokenize premises and choices
-    # Note that we provide both choices together as multiple_choices_inputs
-    multiple_choices_inputs = []
-    for premise, choice1, choice2 in zip(premises, choices_1, choices_2):
-        multiple_choices_inputs.append(tokenizer.encode_plus( \
-            premise, choice1, max_length=512, padding='max_length', \
-            truncation=True))
-        multiple_choices_inputs.append(tokenizer.encode_plus( \
-            premise, choice2, max_length=512, padding='max_length', \
-            truncation=True))
+    # # Tokenize premises and choices
+    # # Note that we provide both choices together as multiple_choices_inputs
+    # multiple_choices_inputs = []
+    # for premise, choice1, choice2 in zip(premises, choices_1, choices_2):
+    #     multiple_choices_inputs.append(tokenizer.encode_plus( \
+    #         premise, choice1, max_length=512, padding='max_length', \
+    #         truncation=True))
+    #     multiple_choices_inputs.append(tokenizer.encode_plus( \
+    #         premise, choice2, max_length=512, padding='max_length', \
+    #         truncation=True))
 
-    # RoBERTa expects a list of all first choices and a list of all second 
-    # choices, hence we restructure the inputs
-    input_ids = [x['input_ids'] for x in multiple_choices_inputs]
-    attention_masks = [x['attention_mask'] for x in multiple_choices_inputs]
+    # # RoBERTa expects a list of all first choices and a list of all second 
+    # # choices, hence we restructure the inputs
+    # input_ids = [x['input_ids'] for x in multiple_choices_inputs]
+    # attention_masks = [x['attention_mask'] for x in multiple_choices_inputs]
 
-    # Restructure inputs to match the expected format for RobertaForMultipleChoice
-    features = {
-        'input_ids': torch.tensor(input_ids).view(-1, 2, 512),
-        'attention_mask': torch.tensor(attention_masks).view(-1, 2, 512),
-        'labels': torch.tensor(labels)
+    # # Restructure inputs to match the expected format for RobertaForMultipleChoice
+    # features = {
+    #     'input_ids': torch.tensor(input_ids).view(-1, 2, 512),
+    #     'attention_mask': torch.tensor(attention_masks).view(-1, 2, 512),
+    #     'labels': torch.tensor(labels)
+    # }
+    # return features
+
+
+    ############################### Ahmed's code ########################################
+    # Repeat each prompt for 5 times to go with the 5 possibilities of each option
+    first_sentences = [[context] * 2 for context in examples[premise_index]]
+    # Grab all options
+    second_sentences = [[ending1, examples[choice_2_index][i]] for i, ending1 in enumerate(examples[choice_1_index])]
+
+    # Flatten everything
+    first_sentences = sum(first_sentences, [])
+    second_sentences = sum(second_sentences, [])
+
+    # Tokenize
+    tokenized_examples = tokenizer(first_sentences, second_sentences, truncation=True)
+    # Un-flatten
+    return {
+        k: [v[i : i + 2] for i in range(0, len(v), 2)]
+        for k, v in tokenized_examples.items()
     }
-    return features
-
 
 
 def postprocess_text(preds, labels):
@@ -108,6 +127,41 @@ def postprocess_text(preds, labels):
     labels = ["\n".join(sent_tokenize(label)) for label in labels]
 
     return preds, labels
+
+@dataclass
+class DataCollatorForMultipleChoice:
+    """
+    Data collator that will dynamically pad the inputs for multiple choice received.
+    """
+
+    tokenizer: AutoTokenizer
+    padding: Union[bool, str, PaddingStrategy] = True
+    max_length: Optional[int] = None
+    pad_to_multiple_of: Optional[int] = None
+
+    def __call__(self, features):
+        label_name = "label" if "label" in features[0].keys() else "labels"
+        labels = [feature.pop(label_name) for feature in features]
+        batch_size = len(features)
+        num_choices = len(features[0]["input_ids"])
+        flattened_features = [
+            [{k: v[i] for k, v in feature.items()} for i in range(num_choices)] for feature in features
+        ]
+        flattened_features = sum(flattened_features, [])
+
+        batch = self.tokenizer.pad(
+            flattened_features,
+            padding=self.padding,
+            max_length=self.max_length,
+            pad_to_multiple_of=self.pad_to_multiple_of,
+            return_tensors="pt",
+        )
+
+        batch = {k: v.view(batch_size, num_choices, -1) for k, v in batch.items()}
+        batch["labels"] = torch.tensor(labels, dtype=torch.int64)
+        return batch
+
+
 
 def main():
     parser = HfArgumentParser((ModelArguments, DataArguments, Seq2SeqTrainingArguments))
@@ -149,7 +203,7 @@ def main():
             model = RobertaForMultipleChoice.from_pretrained(model_args.model_name_or_path)
             tokenizer = RobertaTokenizer.from_pretrained(model_args.model_name_or_path)
 
-        elif model_args.model_name_or_path == "xlm-roberta-base":
+        elif model_args.model_name_or_path == "xlm-roberta-base" or model_args.model_name_or_path == 'FacebookAI/xlm-roberta-base':
             tokenizer = XLMRobertaTokenizer.from_pretrained(model_args.model_name_or_path)
             model = XLMRobertaForMultipleChoice.from_pretrained(model_args.model_name_or_path)
 
@@ -164,7 +218,7 @@ def main():
             new_features["idx"] = Value("int64")
             init_dataset['train'] = init_dataset['train'].cast(new_features)
             init_dataset['validation'] = init_dataset['train'].cast(new_features)
-            init_dataset['test'] = init_dataset['train'].cast(new_features)
+            # init_dataset['test'] = init_dataset['train'].cast(new_features)
 
             datasets.append(init_dataset)
 
@@ -172,7 +226,6 @@ def main():
             print("Training for FIGQA")
             init_dataset = load_dataset("nightingal3/fig-qa")
             datasets.append(init_dataset)
-
 
         metric = load("accuracy")
         compute_metrics_fn = f'compute_metrics_dia_copa'
@@ -190,9 +243,9 @@ def main():
         ## Load dialects datasets and remove the Unnamed: 0 column
         datasets.append( load_dataset(data_args.dataset,dialect).remove_columns(['Unnamed: 0']))
 
-    train_dataset = concatenate_datasets([x['train'] for x in datasets]).shuffle(seed=42)
-    val_dataset = concatenate_datasets([x['validation'] for x in datasets]).shuffle(seed=42)
-    test_dataset = concatenate_datasets([x['test'] for x in datasets]).shuffle(seed=42)
+    train_dataset = concatenate_datasets([x['train'].select(range(500)) for x in datasets])#.shuffle()
+    val_dataset = concatenate_datasets([x['validation'].select(range(500)) for x in datasets])#.shuffle()
+    # test_dataset = concatenate_datasets([x['test'] for x in datasets]).shuffle(seed=42)
 
     # ds_name = data_args.dataset.split("/")[1]
     # map_fn = f'tokenize_{ds_name}'
@@ -200,7 +253,7 @@ def main():
     # Preprocess training and validation data
     train_dataset = train_dataset.map(eval(map_fn),fn_kwargs={"tokenizer":tokenizer}, batched=True)
     val_dataset = val_dataset.map(eval(map_fn),fn_kwargs={"tokenizer":tokenizer}, batched=True)
-    test_dataset = test_dataset.map(eval(map_fn),fn_kwargs={"tokenizer":tokenizer}, batched=True)
+    # test_dataset = test_dataset.map(eval(map_fn),fn_kwargs={"tokenizer":tokenizer}, batched=True)
 
 
     save_path = f'{training_args.output_dir}/{model_args.model_name_or_path}'
@@ -235,10 +288,18 @@ def main():
         # return {'rouge1': 0.0, 'rouge2': 0.0, 'rougeL': 0.0, 'gen_len': 0.0}
 
     def compute_metrics_dia_copa(eval_pred):
-        logits, labels = eval_pred
-        predictions = np.argmax(logits, axis=-1)
-        return metric.compute(predictions=predictions, references=labels)
 
+        """
+        Compute rouge and bleu metrics for seq2seq model generated prediction.
+
+        tip: we can run trainer.predict on our eval/test dataset to see what a sample
+        eval_pred object would look like when implementing custom compute metrics function
+        """
+        predictions, labels = eval_pred
+        # Decode generated summaries, which is in ids into text
+        _, predictions = torch.max(torch.tensor(predictions), dim=1)
+        clf_metrics = evaluate.combine(["accuracy", "f1", "precision", "recall"])
+        return clf_metrics.compute(predictions=predictions, references=labels)
 
     trainer = Trainer(
     model=model,
@@ -248,6 +309,7 @@ def main():
     tokenizer=tokenizer,
     # data_collator=data_collator,
     compute_metrics=eval(compute_metrics_fn),
+    data_collator=DataCollatorForMultipleChoice(tokenizer=tokenizer) if data_args.dataset.split('/')[1] in  ["dia_copa",'dia_figqa'] else DataCollatorForSeq2Seq(tokenizer, model=model,label_pad_token_id=-100,pad_to_multiple_of=8),
     # compute_metrics=compute_metrics_dia_wikilingua,
     callbacks = [EarlyStoppingCallback(early_stopping_patience = 3)]
 )

@@ -41,26 +41,28 @@ HF_CACHE_DIR="/l/users/$USER/hugging_face"
 # echo "ending "
 
 ################################# Copa ##########################
+# --dataset_configs aus,nig,wel,col,hon \
 python finetune.py \
 --output_dir=$SAVEDIR \
---wandb_project="nlp702-project-xlm-roberta-6dialects-figqa" \
---dataset_configs aus,nig,wel,col,hon \
---model_name_or_path='xlm-roberta-base' \
+--wandb_project="nlp702-project-xlm-roberta-6dialects-figqa_ahmed_preprocess" \
+--model_name_or_path='FacebookAI/xlm-roberta-base' \
 --cache_dir ${HF_CACHE_DIR} \
 --dataset ashabrawy/dia_figqa \
 --do_train \
 --do_eval \
 --load_best_model_at_end True \
 --evaluation_strategy steps \
---num_train_epochs=10 \
+--num_train_epochs=200 \
 --save_steps=200 \
---eval_steps=200 \
---logging_steps=200 \
+--eval_steps=100 \
+--logging_steps=100 \
 --report_to="all" \
 --per_device_train_batch_size=16 \
 --per_device_eval_batch_size=16 \
---metric_for_best_model accuracy
+--metric_for_best_model accuracy \
+--warmup_ratio=0.07 \
+--weight_decay=0.01 \
+--learning_rate=1e-06
 echo "ending "
 # --predict_with_generate True
---warmup_ratio=0.01 \
---lr_scheduler_type="linear" 
+# --lr_scheduler_type="linear" 

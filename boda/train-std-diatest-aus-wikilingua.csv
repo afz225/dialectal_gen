@@ -1,0 +1,2 @@
+,eval_loss,eval_rouge1,eval_rouge2,eval_rougeL,eval_rougeLsum,eval_gen_len,eval_runtime,eval_samples_per_second,eval_steps_per_second,epoch,test_set,train_set
+0,2.7658517360687256,29.429,10.8568,25.7045,28.3075,18.28,10.7671,9.288,1.207,2.0,aus,std-dia
